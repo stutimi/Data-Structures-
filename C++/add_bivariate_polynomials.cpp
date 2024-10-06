@@ -1,205 +1,126 @@
-// Addition of two bi-variate polynomials using link list.
-
 #include <bits/stdc++.h>
-#define MAXSIZE 10
-
 using namespace std;
 
-class Node
-{
+class Node {
 public:
     int coeff, px, py;
     Node *next;
+
+    Node(int c, int x, int y) : coeff(c), px(x), py(y), next(nullptr) {}
 };
 
-Node *push(Node *top, int coeff, int px, int py)
-{
-    Node *temp = new Node;
-    if (top == NULL)
-    {
-        temp->coeff = coeff;
-        temp->px = px;
-        temp->py = py;
-        temp->next = top;
-        top = temp;
-        return top;
+class Polynomial {
+private:
+    Node *head;
+
+    // Helper function to push a term into the polynomial list
+    void push(int coeff, int px, int py) {
+        // Create a new node
+        Node *newNode = new Node(coeff, px, py);
+        
+        // If the list is empty or the new term should be placed at the head
+        if (!head || (head->px < px || (head->px == px && head->py < py))) {
+            newNode->next = head;
+            head = newNode;
+            return;
+        }
+
+        Node *current = head;
+        while (current->next && (current->next->px > px || (current->next->px == px && current->next->py > py))) {
+            current = current->next;
+        }
+
+        // Insert newNode in the sorted order
+        newNode->next = current->next;
+        current->next = newNode;
     }
 
-    if (top->next == NULL)
-    {
-        temp->coeff = coeff;
-        temp->px = px;
-        temp->py = py;
-        if (top->px > px || (top->px == px && top->py > py))
-        {
-            top->next = temp;
-            temp->next = NULL;
-        }
-        else
-        {
-            temp->next = top;
-            top = temp;
-        }
-        return top;
+public:
+    Polynomial() : head(nullptr) {}
+
+    // Function to add a term to the polynomial
+    void addTerm(int coeff, int px, int py) {
+        push(coeff, px, py);
     }
 
-    Node *ptr = top;
-    while (ptr->next != NULL && (ptr->px > px || (ptr->px == px && ptr->py > py)))
-    {
-        ptr = ptr->next;
-    }
+    // Function to add two polynomials
+    Polynomial add(Polynomial &other) {
+        Polynomial result;
+        Node *currA = this->head;
+        Node *currB = other.head;
 
-    if (ptr->next == NULL)
-    {
-        temp->coeff = coeff;
-        temp->px = px;
-        temp->py = py;
-
-        if (ptr->px > px || (ptr->px == px && ptr->py > py))
-        {
-            ptr->next = temp;
-            temp->next = NULL;
-        }
-        else
-        {
-            Node *temp1 = top;
-            while (temp1->next != ptr)
-            {
-                temp1 = temp1->next;
+        while (currA || currB) {
+            if (!currA) {
+                result.push(currB->coeff, currB->px, currB->py);
+                currB = currB->next;
+            } else if (!currB) {
+                result.push(currA->coeff, currA->px, currA->py);
+                currA = currA->next;
+            } else if (currA->px == currB->px && currA->py == currB->py) {
+                int newCoeff = currA->coeff + currB->coeff;
+                if (newCoeff != 0) {
+                    result.push(newCoeff, currA->px, currA->py);
+                }
+                currA = currA->next;
+                currB = currB->next;
+            } else if (currA->px > currB->px || (currA->px == currB->px && currA->py > currB->py)) {
+                result.push(currA->coeff, currA->px, currA->py);
+                currA = currA->next;
+            } else {
+                result.push(currB->coeff, currB->px, currB->py);
+                currB = currB->next;
             }
-            temp->next = ptr;
-            temp1->next = temp;
         }
-        return top;
+        return result;
     }
 
-    if (ptr == top)
-    {
-        if (ptr->px <= px && ptr->py < py)
-        {
-            temp->coeff = coeff;
-            temp->px = px;
-            temp->py = py;
-            temp->next = ptr;
-            top = temp;
-            return top;
+    // Function to display the polynomial
+    void display() {
+        Node *temp = head;
+        while (temp) {
+            cout << temp->coeff << " " << temp->px << " " << temp->py << "\n";
+            temp = temp->next;
         }
     }
 
-    temp->coeff = coeff;
-    temp->px = px;
-    temp->py = py;
-    Node *temp1 = top;
-    while (temp1->next != NULL && temp1->next != ptr)
-    {
-        temp1 = temp1->next;
-    }
-
-    if (temp1->next == NULL)
-    {
-        temp->next = NULL;
-        temp1->next = temp;
-        return top;
-    }
-    temp->next = ptr;
-    temp1->next = temp;
-    return top;
-}
-
-int powOfX(Node *curr)
-{
-    return curr->px;
-}
-
-int powOfY(Node *curr)
-{
-    return curr->py;
-}
-
-int coeff(Node *curr)
-{
-    return curr->coeff;
-}
-
-int size = 0;
-
-Node *polly_add(Node *m, Node *n)
-{
-    Node *rTop = NULL;
-    Node *currM = m;
-    Node *currN = n;
-    while (currN != NULL)
-    {
-        int a2 = powOfX(currN), b2 = powOfY(currN), c2 = coeff(currN);
-        while (currM != NULL)
-        {
-            int a1 = powOfX(currM), b1 = powOfY(currM);
-            if (a1 == a2 && b1 == b2)
-            {
-                currM->coeff += c2;
-                currM = m;
-                break;
-            }
-
-            else if (currM->next == NULL)
-            {
-                m = push(m, c2, a2, b2);
-                currM = m;
-                break;
-            }
-            currM = currM->next;
+    // Function to count non-zero terms
+    int countNonZeroTerms() {
+        int count = 0;
+        Node *temp = head;
+        while (temp) {
+            if (temp->coeff != 0) count++;
+            temp = temp->next;
         }
-        currN = currN->next;
+        return count;
     }
-    while (m != NULL)
-    {
-        if (m->coeff != 0)
-        {
-            rTop = push(rTop, m->coeff, m->px, m->py);
-            size++;
-        }
-        m = m->next;
-    }
-    return rTop;
-}
+};
 
-void display(Node *top)
-{
-    Node *temp = top;
-    while (temp != NULL)
-    {
-        cout << temp->coeff << " " << temp->px << " " << temp->py << "\n";
-        temp = temp->next;
-    }
-}
-
-int main()
-{
-
+int main() {
     int m, n;
     cin >> m >> n;
-    if (m > 10 || n > 10)
-    {
-        cout << "Number of terms exceed the MAXSIZE limit\n";
-        exit(0);
+
+    if (m > 10 || n > 10) {
+        cout << "Number of terms exceeds the MAXSIZE limit\n";
+        return 0;
     }
 
-    int coeff, px, py;
-    Node *mTop = NULL, *nTop = NULL;
-    while (m--)
-    {
+    Polynomial polyA, polyB;
+
+    for (int i = 0; i < m; ++i) {
+        int coeff, px, py;
         cin >> coeff >> px >> py;
-        mTop = push(mTop, coeff, px, py);
-    }
-    while (n--)
-    {
-        cin >> coeff >> px >> py;
-        nTop = push(nTop, coeff, px, py);
+        polyA.addTerm(coeff, px, py);
     }
 
-    Node *ans = polly_add(mTop, nTop);
-    cout << size << "\n";
-    display(ans);
+    for (int i = 0; i < n; ++i) {
+        int coeff, px, py;
+        cin >> coeff >> px >> py;
+        polyB.addTerm(coeff, px, py);
+    }
+
+    Polynomial result = polyA.add(polyB);
+    cout << result.countNonZeroTerms() << "\n";
+    result.display();
 
     return 0;
 }
